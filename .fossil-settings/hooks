@@ -1,0 +1,1 @@
+[{"cmd":"sh .precommit.sh %A","type":"before-commit","seq":10}]
