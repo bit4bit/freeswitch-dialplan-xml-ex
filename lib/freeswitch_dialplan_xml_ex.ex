@@ -34,7 +34,7 @@ defmodule FreeswitchDialplanXmlEx do
     
     extension "extension" do
         condition %{"Caller-Destination-Number" => "1" <> rest do
-          action "bridge", "user/1#{rest}"
+          action "bridge", "user/1\#{rest}"
         end
     end
   end
