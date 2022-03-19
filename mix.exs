@@ -34,7 +34,7 @@ defmodule FreeswitchDialplanXmlEx.MixProject do
 
   defp package() do
     [
-      name: "freeswitch-dialplan-xml-ex",
+      name: "freeswitch_dialplan_xml_ex",
       files: ~w(lib mix.exs README* LICENSE*),
       licenses: ["Apache-2.0"],
       links: %{
