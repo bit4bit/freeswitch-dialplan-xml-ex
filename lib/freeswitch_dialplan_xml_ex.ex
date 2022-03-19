@@ -23,7 +23,7 @@ defmodule FreeswitchDialplanXmlEx do
   ~~~
   defmodule MyFanstaticDialplan do
     use FreeswitchDialplanXmlEx, 
-        alias: %{"Caller-Destination-Number" => "destination_number"}
+        condition_field_mapping: %{"Caller-Destination-Number" => "destination_number"}
     
     # only render extension who conditions asserts
     extension "echo" do
