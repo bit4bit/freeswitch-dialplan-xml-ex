@@ -3,46 +3,75 @@ defmodule FreeswitchDialplanXmlEx do
   DialplanXML builder DSL
   """
 
-  alias __MODULE__, as: SELF
-
-  defmodule Context do
-    defstruct xml: []
-
-    def new() do
-      %__MODULE__{}
-    end
-
-    def tag(ctx, tag, attrs) do
-      xml = ctx.xml ++ [{tag, attrs, ""}]
-      %{ctx | xml: xml}
-    end
-
-    def tag(ctx, tag, attrs, content) do
-      xml = ctx.xml ++ [{tag, attrs, to_string(content)}]
-      %{ctx | xml: xml}
-    end
-  end
-
-  def render(ctx) do
-    XmlBuilder.generate(ctx.xml)
-  end
-
-  defmacro current_context() do
+  defmacro __using__(_opts) do
     quote do
-      var!(ctx, SELF)
+      Module.register_attribute(__MODULE__, :extensions, accumulate: true)
+      Module.register_attribute(__MODULE__, :conditions, accumulate: true)
+
+      import unquote(__MODULE__)
     end
   end
 
-  defmacro dialplanXml(_opts \\ [], do: block) do
+  defmacro build do
     quote do
-      current_context() = Context.new()
-      unquote(block)
+      def render(params) do
+        @conditions
+        |> Enum.map(fn {extension, fun_condition} ->
+          case apply(__MODULE__, fun_condition, [params]) do
+            :ok ->
+              conditions =
+                Enum.map(params, fn {field, expression} ->
+                  ~s(<condition field="${#{field}}" expression="#{expression}">)
+                end)
+
+              ~s(<extension name="#{extension}">#{conditions}</condition></extension>)
+
+            :not_found ->
+              ""
+          end
+        end)
+        |> Enum.join("")
+      end
     end
   end
 
   defmacro extension(name, do: block) do
     quote do
-      Context.tag(current_context(), "extension", %{"name" => unquote(name)}, unquote(block))
+      @extensions unquote(name)
+
+      unquote(block)
+    end
+  end
+
+  defmacro condition(var, contents) do
+    # TOMANDO DE: ExUnit.Case
+    contents =
+      case contents do
+        [do: block] ->
+          quote do
+            unquote(block)
+            :ok
+          end
+
+        _ ->
+          quote do
+            try(unquote(contents))
+            :ok
+          end
+      end
+
+    var = Macro.escape(var)
+    contents = Macro.escape(contents, unquote: true)
+
+    fun_name = make_ref() |> :erlang.term_to_binary() |> Base.encode16()
+
+    quote bind_quoted: [fun_name: fun_name, var: var, contents: contents] do
+      extension = List.last(@extensions)
+      name = "#{extension}-condition-#{fun_name}" |> String.to_atom()
+
+      @conditions {extension, name}
+      def unquote(name)(unquote(var)), do: unquote(contents)
+      def unquote(name)(_), do: :not_found
     end
   end
 end
