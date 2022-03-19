@@ -1,3 +1,19 @@
+#######################################################################
+# Copyright 2022 Jovany Leandro G.C <bit4bit@riseup.net>              #
+#                                                                     #
+# Licensed under the Apache License, Version 2.0 (the "License");     #
+# you may not use this file except in compliance with the License.    #
+# You may obtain a copy of the License at                             #
+#                                                                     #
+# http://www.apache.org/licenses/LICENSE-2.0                          #
+#                                                                     #
+# Unless required by applicable law or agreed to in writing, software #
+# distributed under the License is distributed on an "AS IS" BASIS,   #
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express        #
+# or implied. See the License for the specific language governing     #
+# permissions and limitations under the License.                      #
+#######################################################################
+
 defmodule FreeswitchDialplanXmlEx do
   @moduledoc """
   DialplanXML builder DSL
@@ -8,7 +24,7 @@ defmodule FreeswitchDialplanXmlEx do
       Module.register_attribute(__MODULE__, :extensions, accumulate: true)
       Module.register_attribute(__MODULE__, :conditions, accumulate: true)
 
-      @aliases Keyword.get(unquote(opts), :alias, %{})
+      @field_mapping Keyword.get(unquote(opts), :condition_field_mapping, %{})
 
       import unquote(__MODULE__)
 
@@ -61,7 +77,7 @@ defmodule FreeswitchDialplanXmlEx do
                       end
 
                     # apply aliases
-                    field = Map.get(@aliases, field, "${#{field}}")
+                    field = Map.get(@field_mapping, field, "${#{field}}")
                     ~s(<condition field="#{field}" expression="#{expression}")
                 end)
                 |> Enum.reverse()

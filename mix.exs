@@ -7,6 +7,8 @@ defmodule FreeswitchDialplanXmlEx.MixProject do
       version: "0.1.0",
       elixir: "~> 1.13",
       start_permanent: Mix.env() == :prod,
+      description: description(),
+      package: package(),
       deps: deps(),
       elixirc_options: [
         warnings_as_errors: true
@@ -24,5 +26,21 @@ defmodule FreeswitchDialplanXmlEx.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [{:xml_builder, "~> 2.2"}]
+  end
+
+  defp description() do
+    "A opinionated dialplan builder for mod_xml_curl"
+  end
+
+  defp package() do
+    [
+      name: "freeswitch-dialplan-xml-ex",
+      files: ~w(lib mix.exs README* LICENSE*),
+      licenses: ["Apache-2.0"],
+      links: %{
+        "Chiselapp" =>
+          "https://chiselapp.com/user/bit4bit/repository/freeswitch-dialplan-xml-ex/index"
+      }
+    ]
   end
 end
