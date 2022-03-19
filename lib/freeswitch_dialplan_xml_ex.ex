@@ -16,7 +16,35 @@
 
 defmodule FreeswitchDialplanXmlEx do
   @moduledoc """
-  DialplanXML builder DSL
+  DialplanXML builder for freeswitch mod_xml_curl.
+
+  # Example
+
+  ~~~
+  defmodule MyFanstaticDialplan do
+    use FreeswitchDialplanXmlEx, 
+        alias: %{"Caller-Destination-Number" => "destination_number"}
+    
+    # only render extension who conditions asserts
+    extension "echo" do
+        condition %{"Caller-Destination-Number" => "9196" do
+            action "echo"
+        end
+    end
+    
+    extension "extension" do
+        condition %{"Caller-Destination-Number" => "1" <> rest do
+          action "bridge", "user/1#{rest}"
+        end
+    end
+  end
+  ~~~
+
+  then you can render with params from mod_xml_curl and get xml string.
+
+  ~~~
+  MyFantasticDialplan.render(params)
+  ~~~
   """
 
   defmacro __using__(opts) do
