@@ -3,10 +3,12 @@ defmodule FreeswitchDialplanXmlEx do
   DialplanXML builder DSL
   """
 
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
     quote do
       Module.register_attribute(__MODULE__, :extensions, accumulate: true)
       Module.register_attribute(__MODULE__, :conditions, accumulate: true)
+
+      @aliases Keyword.get(unquote(opts), :alias, %{})
 
       import unquote(__MODULE__)
 
@@ -24,10 +26,23 @@ defmodule FreeswitchDialplanXmlEx do
         end)
         |> Map.new()
       end
+
+      # thanks Chris McCord Metaprogrammil Elixir book
+      defp start_buffer(state), do: Agent.start_link(fn -> state end)
+      defp put_buffer(buff, content), do: Agent.update(buff, &[content | &1])
+      defp stop_buffer(buff), do: Agent.stop(buff)
+      defp output_buffer(buff), do: Agent.get(buff, & &1) |> Enum.reverse() |> Enum.join("")
+
+      defp closed_tag(name, attrs) do
+        attr_html = for {key, val} <- attrs, into: "", do: ~s( #{key}="#{val}")
+        "<#{name}#{attr_html}/>"
+      end
+
+      @before_compile unquote(__MODULE__)
     end
   end
 
-  defmacro build do
+  defmacro __before_compile__(_env) do
     quote do
       def render(params) do
         @conditions
@@ -38,10 +53,16 @@ defmodule FreeswitchDialplanXmlEx do
 
               conditions =
                 Enum.map(params, fn
-                  {field, _values} ->
-                    expression = expression_of[field]
+                  {field, value} ->
+                    expression =
+                      case expression_of[field] do
+                        nil -> "^#{value}$"
+                        expression -> expression
+                      end
 
-                    ~s(<condition field="${#{field}}" expression="#{expression}")
+                    # apply aliases
+                    field = Map.get(@aliases, field, "${#{field}}")
+                    ~s(<condition field="#{field}" expression="#{expression}")
                 end)
                 |> Enum.reverse()
                 |> then(fn
@@ -73,17 +94,25 @@ defmodule FreeswitchDialplanXmlEx do
     end
   end
 
+  defmacro tag(name, attrs \\ []) do
+    quote do
+      put_buffer(
+        var!(buff, FreeswitchDialplanXmlEx),
+        closed_tag(unquote(name), unquote(attrs))
+      )
+    end
+  end
+
+  defmacro action(name, value) do
+    quote bind_quoted: [name: name, value: value] do
+      tag("action", application: name, data: value)
+    end
+  end
+
   # TAG: <condition..
-  defmacro condition(var, do: block) do
+  defmacro condition(var, do: contents) do
     # TOMANDO DE: ExUnit.Case
     # must returns contents of <condition>..</condition>
-    contents =
-      quote do
-        case unquote(block) do
-          nil -> ""
-          rest -> rest
-        end
-      end
 
     var = Macro.escape(var)
     contents = Macro.escape(contents, unquote: true)
@@ -95,7 +124,14 @@ defmodule FreeswitchDialplanXmlEx do
       name = "#{extension}-condition-#{fun_name}" |> String.to_atom()
 
       @conditions {extension, name, var}
-      def unquote(name)(unquote(var)), do: unquote(contents)
+      def unquote(name)(unquote(var)) do
+        {:ok, var!(buff, FreeswitchDialplanXmlEx)} = start_buffer([])
+        unquote(contents)
+        output = output_buffer(var!(buff, FreeswitchDialplanXmlEx))
+        :ok = stop_buffer(var!(buff, FreeswitchDialplanXmlEx))
+        output
+      end
+
       def unquote(name)(_), do: :not_found
     end
   end

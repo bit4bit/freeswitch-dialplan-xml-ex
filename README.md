@@ -1,6 +1,39 @@
 # FreeswitchDialplanXmlEx
 
-**TODO: Add description**
+A diaplan builder for **mod_xml_curl**.
+
+~~~elixir
+defmodule MyFanstaticDialplan do
+    use FreeswitchDialplanXmlEx, 
+        alias: %{"Caller-Destination-Number" => "destination_number"}
+    
+    # only render extension who conditions asserts
+    extension "echo" do
+        condition %{"Caller-Destination-Number" => "9196" do
+            action "echo"
+        end
+    end
+    
+    extension "extension" do
+        condition %{"Caller-Destination-Number" => "1" <> rest do
+          action "bridge", "user/1#{rest}"
+        end
+    end
+end
+
+...
+
+IO.inspect MyFanstaticDialplan.render(params_from_mod_xml_curl_as_map)
+
+<extension name"echo">
+ <condition field="${destination_number}" expression="^9196">
+   <action application="echo"/>
+ </condition>
+ <condition field="${variable_destination_number}" expression="^1.+$">
+   <action application="bridge" data="user/1..string interpolated.."/>
+ </condition>
+</extension>
+~~~
 
 ## Installation
 

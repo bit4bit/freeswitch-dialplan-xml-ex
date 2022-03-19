@@ -2,7 +2,8 @@ defmodule FreeswitchDialplanXmlExTest do
   use ExUnit.Case
 
   defmodule BasicDialplan do
-    use FreeswitchDialplanXmlEx
+    use FreeswitchDialplanXmlEx,
+      alias: %{"alias" => "destination_number"}
 
     extension "equal expression" do
       condition %{"test" => "123"} do
@@ -19,7 +20,38 @@ defmodule FreeswitchDialplanXmlExTest do
       end
     end
 
-    build()
+    extension "freeswitch action element" do
+      condition %{"A" => "1"} do
+        action("log", "INFO melo")
+      end
+    end
+
+    extension "freeswitch action element dynamic value" do
+      condition %{"A" => a} do
+        action("log", "INFO GOT #{a}")
+      end
+    end
+
+    extension "alias condition field" do
+      condition %{"alias" => "44"} do
+      end
+    end
+  end
+
+  test "freeswitch alias condition field" do
+    assert BasicDialplan.render(%{"alias" => "44"}) =~
+             ~s(<extension name="alias condition field"><condition field="destination_number" expression="^44$"></condition></extension>)
+  end
+
+  test "freeswitch action element with dynamic value" do
+    # we expect de expression same as value because we want to be a executable dialplan
+    assert BasicDialplan.render(%{"A" => "44"}) =~
+             ~s(<extension name="freeswitch action element dynamic value"><condition field="${A}" expression="^44$"><action application="log" data="INFO GOT 44"/></condition></extension>)
+  end
+
+  test "freeswitch action element" do
+    assert BasicDialplan.render(%{"A" => "1"}) =~
+             ~s(<extension name="freeswitch action element"><condition field="${A}" expression="^1$"><action application="log" data="INFO melo"/></condition></extension>)
   end
 
   test "multiple conditions" do
