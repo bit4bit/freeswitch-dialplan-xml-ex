@@ -56,12 +56,16 @@ defmodule FreeswitchDialplanXmlEx do
 
       import unquote(__MODULE__)
 
+      defp expression_from_vars_ast({:%{}, _, []}) do
+        raise "need something to match"
+      end
+
       defp expression_from_vars_ast(ast) do
         Macro.prewalker(ast)
         |> Enum.map(& &1)
         |> Enum.filter(fn
           {field, {:<>, _, _}} -> true
-          {field, value} when is_binary(field) and is_binary(value) -> true
+          {field, value} when is_binary(field) and (is_binary(value) or is_integer(value)) -> true
           _rest -> false
         end)
         |> Enum.map(fn

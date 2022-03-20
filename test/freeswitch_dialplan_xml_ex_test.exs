@@ -17,6 +17,15 @@
 defmodule FreeswitchDialplanXmlExTest do
   use ExUnit.Case
 
+  defmodule ExceptionsInDialplan do
+    use FreeswitchDialplanXmlEx
+
+    extension "something to match" do
+      condition %{} do
+      end
+    end
+  end
+
   defmodule BasicDialplan do
     use FreeswitchDialplanXmlEx,
       condition_field_mapping: %{"alias" => "destination_number"}
@@ -83,5 +92,11 @@ defmodule FreeswitchDialplanXmlExTest do
   test "dialplan with concatenation expression" do
     assert BasicDialplan.render(%{"test" => "123"}) =~
              ~s(<extension name="concatenation expression"><condition field="${test}" expression="^12.+$"></condition></extension>)
+  end
+
+  test "exception on empty match condition" do
+    assert_raise(RuntimeError, fn ->
+      ExceptionsInDialplan.render(%{"test" => "123"})
+    end)
   end
 end
