@@ -69,8 +69,11 @@ defmodule FreeswitchDialplanXmlEx do
           _rest -> false
         end)
         |> Enum.map(fn
-          {field, {:<>, _, [value | _]}} -> {field, "^#{value}.+$"}
-          {field, value} -> {field, "^#{value}$"}
+          {field, {:<>, _, [value | _]}} ->
+            {field, "^#{value}.+$"}
+
+          {field, value} ->
+            {field, "^#{value}$"}
         end)
         |> Map.new()
       end
