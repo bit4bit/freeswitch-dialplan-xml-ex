@@ -70,7 +70,7 @@ defmodule FreeswitchDialplanXmlEx do
         end)
         |> Enum.map(fn
           {field, {:<>, _, [value | _]}} ->
-            {field, "^#{value}.+$"}
+            {field, "^#{value}.*$"}
 
           {field, value} ->
             {field, "^#{value}$"}

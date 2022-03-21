@@ -91,7 +91,7 @@ defmodule FreeswitchDialplanXmlExTest do
 
   test "dialplan with concatenation expression" do
     assert BasicDialplan.render(%{"test" => "123"}) =~
-             ~s(<extension name="concatenation expression"><condition field="${test}" expression="^12.+$"></condition></extension>)
+             ~s(<extension name="concatenation expression"><condition field="${test}" expression="^12.*$"></condition></extension>)
   end
 
   test "exception on empty match condition" do
